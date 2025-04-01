@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Journal</title>
+        <style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #1C2526; /* Dark mode background like iOS */
+        color: #E0E0E0; /* Light text for contrast */
+    }
+    h1 {
+        color: #E0E0E0;
+    }
+    .market-status {
+        padding: 10px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+    }
+    .market-open {
+        background-color: #2E3B3E;
+        color: #A3BE8C; /* Nice green for text */
+    }
+    .market-closed {
+        background-color: #3B2E3E;
+        color: #BF616A; /* Soft red for closed */
+    }
+    .button-group {
+        margin-top: 20px;
+    }
+    .timeframe-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    .timeframe-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        background-color: #4A4A4A; /* Greyed out */
+        color: #E0E0E0;
+        transition: background-color 0.3s;
+    }
+    .timeframe-btn.active {
+        background-color: #A3BE8C; /* Nice green, not neon */
+        color: #1C2526;
+    }
+    .timeframe-section {
+        display: none;
+        margin: 20px 0;
+        padding: 10px;
+        border: 1px solid #4A4A4A;
+        border-radius: 5px;
+        background-color: #2E3B3E;
+    }
+    .timeframe-section.active {
+        display: block;
+    }
+    label {
+        display: inline-block;
+        width: 250px;
+        margin: 10px 0;
+        color: #E0E0E0;
+    }
+    input[type="text"], input[type="number"], select {
+        padding: 5px;
+        width: 200px;
+        margin: 10px 0;
+        background-color: #3B4A4D;
+        border: 1px solid #4A4A4A;
+        color: #E0E0E0;
+        border-radius: 5px;
+    }
+    button {
+        padding: 10px 20px;
+        margin: 5px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    button:hover {
+        opacity: 0.9;
+    }
+    .btn-analyze { background-color: #A3BE8C; color: #1C2526; }
+    .btn-recall { background-color: #88C0D0; color: #1C2526; }
+    .btn-backtest { background-color: #D08770; color: #1C2526; }
+    .btn-exit { background-color: #BF616A; color: #1C2526; }
+    .analysis-results {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #2E3B3E;
+        border: 1px solid #4A4A4A;
+        border-radius: 5px;
+    }
+</style>
+</head>
+<body>
+    <h1>Trading Journal</h1>
+
+    <!-- Market Status -->
+    <div class="market-status {% if is_market_closed %}market-closed{% else %}market-open{% endif %}">
+        <p>{{ market_message }}</p>
+    </div>
+
+    <!-- Analysis Form -->
+    <div class="button-group">
+        <<form method="POST" action="{{ url_for('analyze') }}?cache_bust={{ cache_bust }}">
+            <h2>Market Analysis</h2>
+<label for="symbol">Symbol (e.g., APPL):</label>
+<input type="text" id="symbol" name="symbol" required><br>
+<div class="timeframe-buttons">
+    <button type="button" class="timeframe-btn" onclick="showSection('HTF')">HTF</button>
+    <button type="button" class="timeframe-btn" onclick="showSection('MTF')">MTF</button>
+    <button type="button" class="timeframe-btn" onclick="showSection('LTF')">LTF</button>
+</div>
+
+            <!-- HTF Inputs -->
+            <div class="timeframe-section" id="HTF-section">
+                <h3>HTF Analysis</h3>
+                <label for="htf">Timeframe for HTF (e.g., 1d):</label>
+                <input type="text" id="htf" name="htf" required><br>
+                <label for="HTF_trend">Trend (Select all that apply):</label>
+                <select id="HTF_trend" name="HTF_trend" multiple required>
+                    <option value="Bullish">Bullish/G</option>
+                    <option value="Bearish">Bearish/R</option>
+                </select><br>
+                <label for="HTF_stage">Stage (Select all that apply):</label>
+                <select id="HTF_stage" name="HTF_stage" multiple required>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                </select><br>
+                <label for="HTF_bars">Current Bars:</label>
+                <input type="number" id="HTF_bars" name="HTF_bars" required><br>
+                <label for="HTF_avg_bars">Avg Expectancy Bars:</label>
+                <input type="number" id="HTF_avg_bars" name="HTF_avg_bars" required><br>
+                <label for="HTF_key_levels">Key Levels (Select all that apply):</label>
+                <select id="HTF_key_levels" name="HTF_key_levels" multiple required>
+                    <option value="Supply">Supply</option>
+                    <option value="Demand">Demand</option>
+                    <option value="50% Invalidation">50% Invalidation</option>
+                    <option value="Abs. Y">Abs. Y</option>
+                    <option value="Support">Support</option>
+                    <option value="Resistance">Resistance</option>
+                    <option value="Mid Line">Mid Line</option>
+                    <option value="Highlighted Wick">Highlighted Wick</option>
+                </select><br>
+                <label for="HTF_mas">MAs (Select all that apply):</label>
+                <select id="HTF_mas" name="HTF_mas" multiple required>
+                    <option value="Below 20MA">Below 20MA</option>
+                    <option value="Above 20MA">Above 20MA</option>
+                    <option value="Below 50MA">Below 50MA</option>
+                    <option value="Above 50MA">Above 50MA</option>
+                </select><br>
+                <label for="HTF_validation_price">Validation Price:</label>
+                <input type="text" id="HTF_validation_price" name="HTF_validation_price" required><br>
+                <label for="HTF_validation_hit">Validation Hit (Select all that apply):</label>
+                <select id="HTF_validation_hit" name="HTF_validation_hit" multiple required>
+                    <option value="Y">Y</option>
+                    <option value="N">N</option>
+                </select><br>
+                <label for="HTF_invalidation_price">Invalidation Price:</label>
+                <input type="text" id="HTF_invalidation_price" name="HTF_invalidation_price" required><br>
+                <label for="HTF_invalidation_hit">Invalidation Hit (Select all that apply):</label>
+                <select id="HTF_invalidation_hit" name="HTF_invalidation_hit" multiple required>
+                    <option value="Y">Y</option>
+                    <option value="N">N</option>
+                </select><br>
+            </div>
+
+            <!-- MTF Inputs -->
+            <div class="timeframe-section" id="MTF-section">
+                <h3>MTF Analysis</h3>
+                <label for="mtf">Timeframe for MTF (e.g., 4hr):</label>
+                <input type="text" id="mtf" name="mtf" required><br>
+                <label for="MTF_trend">Trend (Select all that apply):</label>
+                <select id="MTF_trend" name="MTF_trend" multiple required>
+                    <option value="Bullish">Bullish/G</option>
+                    <option value="Bearish">Bearish/R</option>
+                </select><br>
+                <label for="MTF_stage">Stage (Select all that apply):</label>
+                <select id="MTF_stage" name="MTF_stage" multiple required>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                </select><br>
+                <label for="MTF_bars">Current Bars:</label>
+                <input type="number" id="MTF_bars" name="MTF_bars" required><br>
+                <label for="MTF_avg_bars">Avg Expectancy Bars:</label>
+                <input type="number" id="MTF_avg_bars" name="MTF_avg_bars" required><br>
+                <label for="MTF_key_levels">Key Levels (Select all that apply):</label>
+                <select id="MTF_key_levels" name="MTF_key_levels" multiple required>
+                    <option value="Supply">Supply</option>
+                    <option value="Demand">Demand</option>
+                    <option value="50% Invalidation">50% Invalidation</option>
+                    <option value="Abs. Y">Abs. Y</option>
+                    <option value="Support">Support</option>
+                    <option value="Resistance">Resistance</option>
+                    <option value="Mid Line">Mid Line</option>
+                    <option value="Highlighted Wick">Highlighted Wick</option>
+                </select><br>
+                <label for="MTF_mas">MAs (Select all that apply):</label>
+                <select id="MTF_mas" name="MTF_mas" multiple required>
+                    <option value="Below 20MA">Below 20MA</option>
+                    <option value="Above 20MA">Above 20MA</option>
+                    <option value="Below 50MA">Below 50MA</option>
+                    <option value="Above 50MA">Above 50MA</option>
+                </select><br>
+                <label for="MTF_validation_price">Validation Price:</label>
+                <input type="text" id="MTF_validation_price" name="MTF_validation_price" required><br>
+                <label for="MTF_validation_hit">Validation Hit (Select all that apply):</label>
+                <select id="MTF_validation_hit" name="MTF_validation_hit" multiple required>
+                    <option value="Y">Y</option>
+                    <option value="N">N</option>
+                </select><br>
+                <label for="MTF_invalidation_price">Invalidation Price:</label>
+                <input type="text" id="MTF_invalidation_price" name="MTF_invalidation_price" required><br>
+                <label for="MTF_invalidation_hit">Invalidation Hit (Select all that apply):</label>
+                <select id="MTF_invalidation_hit" name="MTF_invalidation_hit" multiple required>
+                    <option value="Y">Y</option>
+                    <option value="N">N</option>
+                </select><br>
+            </div>
+
+            <!-- LTF Inputs -->
+            <div class="timeframe-section" id="LTF-section">
+                <h3>LTF Analysis</h3>
+                <label for="ltf">Timeframe for LTF (e.g., 15min):</label>
+                <input type="text" id="ltf" name="ltf" required><br>
+                <label for="LTF_trend">Trend (Select all that apply):</label>
+                <select id="LTF_trend" name="LTF_trend" multiple required>
+                    <option value="Bullish">Bullish/G</option>
+                    <option value="Bearish">Bearish/R</option>
+                </select><br>
+                <label for="LTF_stage">Stage (Select all that apply):</label>
+                <select id="LTF_stage" name="LTF_stage" multiple required>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                </select><br>
+                <label for="LTF_bars">Current Bars:</label>
+                <input type="number" id="LTF_bars" name="LTF_bars" required><br>
+                <label for="LTF_avg_bars">Avg Expectancy Bars:</label>
+                <input type="number" id="LTF_avg_bars" name="LTF_avg_bars" required><br>
+                <label for="LTF_key_levels">Key Levels (Select all that apply):</label>
+                <select id="LTF_key_levels" name="LTF_key_levels" multiple required>
+                    <option value="Supply">Supply</option>
+                    <option value="Demand">Demand</option>
+                    <option value="50% Invalidation">50% Invalidation</option>
+                    <option value="Abs. Y">Abs. Y</option>
+                    <option value="Support">Support</option>
+                    <option value="Resistance">Resistance</option>
+                    <option value="Mid Line">Mid Line</option>
+                    <option value="Highlighted Wick">Highlighted Wick</option>
+                </select><br>
+                <label for="LTF_mas">MAs (Select all that apply):</label>
+                <select id="LTF_mas" name="LTF_mas" multiple required>
+                    <option value="Below 20MA">Below 20MA</option>
+                    <option value="Above 20MA">Above 20MA</option>
+                    <option value="Below 50MA">Below 50MA</option>
+                    <option value="Above 50MA">Above 50MA</option>
+                </select><br>
+                <label for="LTF_validation_price">Validation Price:</label>
+                <input type="text" id="LTF_validation_price" name="LTF_validation_price" required><br>
+                <label for="LTF_validation_hit">Validation Hit (Select all that apply):</label>
+                <select id="LTF_validation_hit" name="LTF_validation_hit" multiple required>
+                    <option value="Y">Y</option>
+                    <option value="N">N</option>
+                </select><br>
+                <label for="LTF_invalidation_price">Invalidation Price:</label>
+                <input type="text" id="LTF_invalidation_price" name="LTF_invalidation_price" required><br>
+                <label for="LTF_invalidation_hit">Invalidation Hit (Select all that apply):</label>
+                <select id="LTF_invalidation_hit" name="LTF_invalidation_hit" multiple required>
+                    <option value="Y">Y</option>
+                    <option value="N">N</option>
+                </select><br>
+            </div>
+
+            <div class="timeframe-section">
+                <h3>Trade Placement</h3>
+                <label for="place_trade">Place Trade?</label>
+                <select id="place_trade" name="place_trade" required>
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                </select><br>
+                <label for="during_feeling">How do you feel during this trade?</label>
+                <input type="text" id="during_feeling" name="during_feeling"><br>
+            </div>
+
+            <!-- Trade Exit -->
+
+            <!-- Trade Placement -->
+<div class="timeframe-section">
+    <h3>Trade Placement</h3>
+    <label for="place_trade">Place Trade?</label>
+    <select id="place_trade" name="place_trade" required>
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+    </select><br>
+    <label for="during_feeling">How do you feel during this trade?</label>
+    <input type="text" id="during_feeling" name="during_feeling"><br>
+</div>
+
+<!-- Trade Exit -->
+<div class="timeframe-section">
+    <h3>Trade Exit</h3>
+    <label for="exit_trade">Exit Trade?</label>
+    <select id="exit_trade" name="exit_trade" required>
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+    </select><br>
+    <label for="after_feeling">How do you feel after this trade?</label>
+    <input type="text" id="after_feeling" name="after_feeling"><br>
+</div>
+
+            <button type="submit" class="btn-analyze">Analyze Market</button>
+        </form>
+
+        <!-- Other Actions -->
+        <form method="POST" action="{{ url_for('recall') }}">
+            <button type="submit" class="btn-recall">Recall Analysis</button>
+        </form>
+        <form method="POST" action="{{ url_for('backtest') }}">
+            <button type="submit" class="btn-backtest">Backtest Pattern</button>
+        </form>
+        <form method="POST" action="{{ url_for('chart') }}">
+            <button type="submit" class="btn-backtest">Generate Chart</button>
+        </form>
+        <form method="POST" action="{{ url_for('exit_app') }}">
+            <label for="reason">Reason for Exit:</label>
+            <input type="text" id="reason" name="reason" required>
+            <button type="submit" class="btn-exit">Exit</button>
+        </form>
+    </div>
+
+    <!-- Display Analysis Results -->
+    {% if analysis_data %}
+    <div class="analysis-results">
+        <h2>Analysis Results for {{ symbol }}</h2>
+        {% for tf_label, tf_value in timeframes.items() %}
+        <h3>{{ tf_label }}: {{ tf_value }}</h3>
+        <p>Trend: {{ analysis_data[tf_label]['Trend'] }}</p>
+        <p>Stage: {{ analysis_data[tf_label]['Stage'] }} ({{ analysis_data[tf_label]['Bars'] }} bars, {{ analysis_data[tf_label]['Expectancy']|round(2) }}%)</p>
+        <p>Key Levels: {{ analysis_data[tf_label]['Key Levels'] }}</p>
+        <p>MAs: {{ analysis_data[tf_label]['MAs'] }}</p>
+        <p>Bias: {{ analysis_data[tf_label]['Bias'] }}</p>
+        <p>Stage Light: {{ analysis_data[tf_label]['Stage Light'] }}</p>
+        <p>Price Light: {{ analysis_data[tf_label]['Price Light'] }}</p>
+        <p>Validation: {{ analysis_data[tf_label]['Validation'] }}</p>
+        <p>Invalidation: {{ analysis_data[tf_label]['Invalidation'] }}</p>
+        {% endfor %}
+        <p>Overall Signal: {{ overall_signal }}</p>
+        {% if trade_placed == "yes" %}
+        <p>Trade Placed: Yes</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Display Emotions -->
+    {% if emotions %}
+    <div class="analysis-results">
+        <h2>Previous Emotions</h2>
+        <pre>{{ emotions }}</pre>
+    </div>
+    {% endif %}
+</body>
+</html>
+<script>
+    function showSection(timeframe) {
+        // Hide all sections and remove active class from buttons
+        document.querySelectorAll('.timeframe-section').forEach(section => {
+            section.classList.remove('active');
+        });
+        document.querySelectorAll('.timeframe-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // Show the selected section and mark the button as active
+        document.getElementById(timeframe + '-section').classList.add('active');
+        document.querySelector(`button[onclick="showSection('${timeframe}')"]`).classList.add('active');
+    }
+</script>

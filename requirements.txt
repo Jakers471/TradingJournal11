@@ -1,0 +1,9 @@
+pandas
+matplotlib
+gspread
+oauth2client
+opencv-python
+numpy
+pytesseract
+pytz
+flask
